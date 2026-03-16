@@ -703,25 +703,41 @@ with tab1:
     st.markdown("---")
     st.markdown('<div class="section-header">💬 Captions/Subtitles</div>', unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 1, 2])
+    col1, col2, col3, col4 = st.columns([1.5, 1, 1, 1.5])
 
     with col1:
         if st.button("🔄 Auto-Generate Captions", use_container_width=True):
-            if st.session_state.project['script_urdu']:
-                lines = [l.strip() for l in st.session_state.project['script_urdu'].split('\n') if l.strip() and len(l.strip()) > 5]
-                st.session_state.project['captions'] = lines
-                st.success(f"Generated {len(lines)} captions!")
-                st.rerun()
+            script = st.session_state.project.get('script_urdu', '')
+            if script and len(script) > 10:
+                lines = [l.strip() for l in script.split('\n') if l.strip() and len(l.strip()) > 5]
+                if lines:
+                    st.session_state.project['captions'] = lines
+                    st.toast(f"✅ Generated {len(lines)} captions!", icon="✅")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error("Script mein koi valid lines nahi hain!")
+            else:
+                st.error("⚠️ Pehle script add karein!")
 
     with col2:
-        st.metric("Total Captions", len(st.session_state.project.get('captions', [])))
+        if st.button("🗑️ Clear All", use_container_width=True):
+            st.session_state.project['captions'] = []
+            st.toast("Captions cleared!", icon="🗑️")
+            st.rerun()
+
+    with col3:
+        st.metric("Total", len(st.session_state.project.get('captions', [])))
 
     # Show captions
     captions = st.session_state.project.get('captions', [])
     if captions:
-        with st.expander(f"📋 View All {len(captions)} Captions", expanded=False):
+        st.markdown(f"**📋 {len(captions)} Captions Ready:**")
+        with st.container(height=200):
             for i, cap in enumerate(captions):
-                st.markdown(f'<div style="direction:rtl; text-align:right; padding:5px; border-bottom:1px solid rgba(255,255,255,0.1);">{i+1}. {cap}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="direction:rtl; text-align:right; padding:8px; margin:3px 0; background:rgba(30,58,95,0.5); border-radius:8px; border-right:3px solid #ffd700;">{i+1}. {cap}</div>', unsafe_allow_html=True)
+    else:
+        st.info("💡 Script likhein aur 'Auto-Generate Captions' click karein")
 
 
 # ============== TAB 2: AUDIO ==============
@@ -929,47 +945,67 @@ with tab5:
     with col2:
         st.markdown('<div class="section-header">🎬 Generate Video</div>', unsafe_allow_html=True)
 
-        ready = sum(checks.values()) >= 4  # At least 4 items checked
+        ready = sum(checks.values()) >= 3  # At least 3 items checked (more lenient)
 
         if ready:
             if st.button("🚀 Generate Video", type="primary", use_container_width=True):
-                progress = st.progress(0)
-                status = st.empty()
+                progress_bar = st.progress(0)
+                status_text = st.empty()
 
                 try:
-                    status.text("📝 Preparing content...")
-                    progress.progress(10)
-                    time.sleep(0.5)
+                    from generate_video import generate_video
 
-                    status.text("🎙️ Processing audio...")
-                    progress.progress(30)
-                    time.sleep(0.5)
+                    def update_progress(pct, msg):
+                        progress_bar.progress(pct)
+                        status_text.text(msg)
 
-                    status.text("🎨 Creating backgrounds...")
-                    progress.progress(50)
-                    time.sleep(0.5)
+                    # Generate unique filename
+                    import datetime
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    output_name = f"halal_video_{timestamp}"
 
-                    status.text("✨ Adding captions...")
-                    progress.progress(70)
-                    time.sleep(0.5)
+                    # Get project data
+                    proj = st.session_state.project
 
-                    status.text("🎬 Rendering video...")
-                    progress.progress(90)
-                    time.sleep(0.5)
-
-                    progress.progress(100)
-                    status.text("✅ Complete!")
+                    # Generate the video
+                    video_path, audio_path = generate_video(
+                        script_urdu=proj.get('script_urdu', ''),
+                        title_urdu=proj.get('title_urdu', ''),
+                        arabic_text=proj.get('arabic_text', ''),
+                        captions=proj.get('captions', []),
+                        voice=proj.get('voice', 'ur-PK-AsadNeural'),
+                        voice_speed=proj.get('voice_speed', '-5%'),
+                        output_name=output_name,
+                        progress_callback=update_progress
+                    )
 
                     st.success("🎉 Video generated successfully!")
-                    st.info("Note: Full rendering engine coming soon!")
+
+                    # Show video
+                    st.video(str(video_path))
+
+                    # Download button
+                    with open(video_path, 'rb') as f:
+                        st.download_button(
+                            "⬇️ Download Video",
+                            f,
+                            file_name=f"{output_name}.mp4",
+                            mime="video/mp4",
+                            use_container_width=True
+                        )
+
+                    # File info
+                    size_mb = os.path.getsize(video_path) / (1024*1024)
+                    st.caption(f"📁 {video_path.name} ({size_mb:.1f} MB)")
 
                 except Exception as e:
-                    st.error(f"Error: {e}")
+                    st.error(f"❌ Error: {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
         else:
-            st.warning("⚠️ Please complete more fields before exporting")
+            st.warning("⚠️ Please complete required fields:")
 
             missing = [k for k, v in checks.items() if not v]
-            st.markdown("**Missing:**")
             for item in missing:
                 st.markdown(f"• {item}")
 
