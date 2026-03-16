@@ -7,3 +7,4 @@ rich>=13.6.0
 questionary>=2.0.1
 aiofiles>=23.2.1
 python-dotenv>=1.0.0
+streamlit>=1.28.0
