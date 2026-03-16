@@ -1,0 +1,17 @@
+{
+  "title": "",
+  "title_urdu": "",
+  "arabic_text": "",
+  "arabic_verified": false,
+  "arabic_source": "",
+  "script_urdu": "",
+  "captions": [],
+  "voice": "ur-PK-AsadNeural",
+  "voice_speed": "-5%",
+  "bg_type": "nature",
+  "bg_videos": [],
+  "text_style": "center",
+  "text_animation": "word-by-word",
+  "audio_path": null,
+  "video_path": null
+}
