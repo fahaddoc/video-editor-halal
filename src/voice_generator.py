@@ -3,9 +3,89 @@ Voice Generator Module
 Uses Microsoft Edge TTS (FREE) for high-quality voice synthesis
 """
 import asyncio
+import re
 import edge_tts
 from pathlib import Path
 from config import VOICE_SETTINGS, OUTPUT_DIR
+
+
+def clean_script_for_voice(text: str) -> str:
+    """
+    Clean script text for better voice synthesis
+    Removes stage directions, keeps only spoken content
+    """
+    lines = text.strip().split('\n')
+    clean_lines = []
+
+    for line in lines:
+        line = line.strip()
+
+        # Skip empty lines
+        if not line:
+            continue
+
+        # Skip lines that are entirely in brackets (stage directions)
+        if line.startswith('[') and line.endswith(']'):
+            continue
+
+        # Skip section headers and markers
+        if line.startswith('TITLE:') or line.startswith('==='):
+            continue
+
+        # Skip pure formatting lines
+        if line.startswith('---') or line.startswith('***'):
+            continue
+
+        # Remove inline brackets (music cues, stage directions)
+        line = re.sub(r'\[.*?\]', '', line)
+
+        # Remove asterisks (markdown bold/italic)
+        line = line.replace('*', '')
+
+        # Remove hashtags
+        line = re.sub(r'#\w+', '', line)
+
+        # Clean up multiple spaces
+        line = ' '.join(line.split())
+
+        # Skip if line is now empty or too short
+        if len(line) < 2:
+            continue
+
+        clean_lines.append(line)
+
+    # Join with proper pauses
+    result = '\n'.join(clean_lines)
+
+    # Add natural pauses
+    result = result.replace('...', ', ')  # Convert ellipsis to pause
+    result = result.replace('؟', '?')  # Urdu question mark
+    result = result.replace('۔', '.')  # Urdu period
+
+    return result
+
+
+def get_spoken_lines(text: str) -> list:
+    """
+    Extract individual spoken lines for subtitle display
+    """
+    clean_text = clean_script_for_voice(text)
+    lines = []
+
+    for line in clean_text.split('\n'):
+        line = line.strip()
+        if line and len(line) > 2:
+            # Split long lines
+            if len(line) > 80:
+                # Split at sentence boundaries
+                sentences = re.split(r'(?<=[.!?])\s+', line)
+                for sent in sentences:
+                    if sent.strip():
+                        lines.append(sent.strip())
+            else:
+                lines.append(line)
+
+    return lines
 
 
 async def generate_voice_async(
@@ -17,21 +97,14 @@ async def generate_voice_async(
 ) -> Path:
     """
     Generate voice from text using Edge TTS
-
-    Args:
-        text: The script text to convert to speech
-        output_path: Where to save the audio file
-        voice: Voice key from VOICE_SETTINGS
-        rate: Speech rate (e.g., "-10%", "+10%")
-        pitch: Voice pitch adjustment
-
-    Returns:
-        Path to the generated audio file
     """
     voice_id = VOICE_SETTINGS.get(voice, VOICE_SETTINGS["urdu_male"])
 
+    # Clean the text
+    clean_text = clean_script_for_voice(text)
+
     communicate = edge_tts.Communicate(
-        text=text,
+        text=clean_text,
         voice=voice_id,
         rate=rate,
         pitch=pitch
@@ -50,70 +123,21 @@ def generate_voice(
 ) -> Path:
     """
     Synchronous wrapper for voice generation
-
-    Args:
-        text: The script text to convert to speech
-        output_path: Where to save (default: output/voiceover.mp3)
-        voice: Voice key from settings
-        rate: Speech rate
-        pitch: Voice pitch
-
-    Returns:
-        Path to the generated audio file
     """
     if output_path is None:
         output_path = OUTPUT_DIR / "voiceover.mp3"
-
-    # Clean the text
-    clean_text = clean_script_for_voice(text)
 
     # Run async function
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
         result = loop.run_until_complete(
-            generate_voice_async(clean_text, output_path, voice, rate, pitch)
+            generate_voice_async(text, output_path, voice, rate, pitch)
         )
     finally:
         loop.close()
 
     return result
-
-
-def clean_script_for_voice(text: str) -> str:
-    """
-    Clean script text for better voice synthesis
-    Removes stage directions, keeps spoken content
-    """
-    lines = text.strip().split('\n')
-    clean_lines = []
-
-    for line in lines:
-        line = line.strip()
-
-        # Skip empty lines
-        if not line:
-            continue
-
-        # Skip stage directions in brackets
-        if line.startswith('[') and line.endswith(']'):
-            continue
-
-        # Skip section headers
-        if line.startswith('TITLE:') or line.startswith('==='):
-            continue
-
-        # Remove inline brackets (music cues, etc.)
-        import re
-        line = re.sub(r'\[.*?\]', '', line)
-
-        # Clean up extra spaces
-        line = ' '.join(line.split())
-
-        if line:
-            clean_lines.append(line)
-
-    return '\n'.join(clean_lines)
 
 
 def list_available_voices():
@@ -130,19 +154,10 @@ def list_available_voices():
     }
 
 
-async def list_all_edge_voices():
-    """List all available Edge TTS voices"""
-    voices = await edge_tts.list_voices()
-    return voices
-
-
 if __name__ == "__main__":
-    # Test voice generation
     test_text = """
     Assalam o Alaikum.
     Yeh ek test hai voice generation ka.
-    Umeed hai aapko pasand aayega.
     """
-
     output = generate_voice(test_text, voice="urdu_male")
     print(f"Voice generated: {output}")

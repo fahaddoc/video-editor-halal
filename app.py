@@ -210,6 +210,8 @@ with col2:
                     audio_path=audio_path,
                     image_paths=backgrounds,
                     output_path=video_path,
+                    title=selected_script['title'],
+                    script_text=selected_script['script'],
                 )
                 progress_bar.progress(85)
 
