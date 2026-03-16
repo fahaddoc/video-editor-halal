@@ -9,6 +9,10 @@ import json
 from pathlib import Path
 import time
 import asyncio
+import nest_asyncio
+
+# Fix asyncio for Streamlit
+nest_asyncio.apply()
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -306,6 +310,181 @@ TEMPLATES = {
             "حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ",
             "سبسکرائب کریں",
             "اللہ حافظ",
+        ],
+        "category": "Quran"
+    },
+    "shukr_gratitude": {
+        "title": "Gratitude to Allah",
+        "title_urdu": "شکر کی فضیلت",
+        "arabic_text": "لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ",
+        "arabic_source": "Surah Ibrahim 14:7",
+        "arabic_verified": True,
+        "script_urdu": """اللہ تعالیٰ فرماتے ہیں:
+اگر تم شکر کرو گے تو میں تمہیں اور زیادہ دوں گا۔
+
+سبحان اللہ! کتنا بڑا وعدہ ہے۔
+
+شکر کا مطلب کیا ہے؟
+اللہ کی نعمتوں کو پہچاننا۔
+دل سے ان کا اعتراف کرنا۔
+زبان سے الحمد للہ کہنا۔
+
+ہم کتنی نعمتوں میں ہیں!
+صحت، خاندان، کھانا، پانی۔
+ہر سانس اللہ کی نعمت ہے۔
+
+نبی صلی اللہ علیہ وسلم نے فرمایا:
+جس نے صبح کی اور اس کا جسم صحیح ہے،
+اور اس کے پاس ایک دن کا کھانا ہے،
+گویا اسے ساری دنیا مل گئی۔
+
+الحمد للہ کہیں۔
+ہر حال میں شکر کریں۔
+
+سبسکرائب کریں۔
+اللہ حافظ۔""",
+        "captions": [
+            "اللہ تعالیٰ فرماتے ہیں",
+            "اگر شکر کرو گے تو میں زیادہ دوں گا",
+            "سبحان اللہ! کتنا بڑا وعدہ",
+            "شکر کا مطلب کیا ہے؟",
+            "اللہ کی نعمتوں کو پہچاننا",
+            "ہم کتنی نعمتوں میں ہیں!",
+            "صحت، خاندان، کھانا، پانی",
+            "ہر سانس اللہ کی نعمت ہے",
+            "نبی ﷺ نے فرمایا",
+            "الحمد للہ کہیں",
+            "ہر حال میں شکر کریں",
+            "سبسکرائب کریں",
+        ],
+        "category": "Quran"
+    },
+    "istighfar": {
+        "title": "Power of Istighfar",
+        "title_urdu": "استغفار کی طاقت",
+        "arabic_text": "وَمَن يَعْمَلْ سُوءًا أَوْ يَظْلِمْ نَفْسَهُ ثُمَّ يَسْتَغْفِرِ اللَّهَ يَجِدِ اللَّهَ غَفُورًا رَّحِيمًا",
+        "arabic_source": "Surah An-Nisa 4:110",
+        "arabic_verified": True,
+        "script_urdu": """اللہ تعالیٰ فرماتے ہیں:
+جو کوئی برا کام کرے یا اپنے آپ پر ظلم کرے،
+پھر اللہ سے معافی مانگے،
+تو وہ اللہ کو بخشنے والا مہربان پائے گا۔
+
+استغفار کی طاقت بے حد ہے۔
+گناہوں سے پاک ہونے کا راستہ۔
+رزق میں برکت کا ذریعہ۔
+پریشانیوں سے نجات۔
+
+نبی صلی اللہ علیہ وسلم نے فرمایا:
+جو استغفار کو لازم پکڑ لے،
+اللہ اسے ہر تنگی سے نکال دیتے ہیں۔
+ہر غم سے راحت دیتے ہیں۔
+اور جہاں سے گمان نہ ہو، رزق دیتے ہیں۔
+
+أَسْتَغْفِرُ اللَّهَ
+میں اللہ سے معافی مانگتا ہوں۔
+
+روزانہ کم از کم سو بار استغفار کریں۔
+
+سبسکرائب کریں۔
+اللہ حافظ۔""",
+        "captions": [
+            "اللہ تعالیٰ فرماتے ہیں",
+            "جو اللہ سے معافی مانگے",
+            "اللہ کو بخشنے والا مہربان پائے گا",
+            "استغفار کی طاقت بے حد ہے",
+            "گناہوں سے پاک ہونے کا راستہ",
+            "نبی ﷺ نے فرمایا",
+            "جو استغفار کو لازم پکڑ لے",
+            "اللہ ہر تنگی سے نکال دیتے ہیں",
+            "جہاں سے گمان نہ ہو، رزق دیتے ہیں",
+            "أَسْتَغْفِرُ اللَّهَ",
+            "روزانہ سو بار استغفار کریں",
+            "سبسکرائب کریں",
+        ],
+        "category": "Quran"
+    },
+    "durood_sharif": {
+        "title": "Blessings of Durood",
+        "title_urdu": "درود شریف کی فضیلت",
+        "arabic_text": "إِنَّ اللَّهَ وَمَلَائِكَتَهُ يُصَلُّونَ عَلَى النَّبِيِّ",
+        "arabic_source": "Surah Al-Ahzab 33:56",
+        "arabic_verified": True,
+        "script_urdu": """اللہ تعالیٰ فرماتے ہیں:
+بے شک اللہ اور اس کے فرشتے نبی پر درود بھیجتے ہیں۔
+
+اے ایمان والو!
+تم بھی ان پر درود اور سلام بھیجو۔
+
+نبی صلی اللہ علیہ وسلم نے فرمایا:
+جو مجھ پر ایک بار درود بھیجے،
+اللہ اس پر دس رحمتیں نازل فرماتے ہیں۔
+
+اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ
+وَعَلَى آلِ مُحَمَّدٍ
+
+جمعہ کا دن درود کا خاص دن ہے۔
+کثرت سے درود پڑھیں۔
+
+درود سے گناہ معاف ہوتے ہیں۔
+درود سے پریشانیاں دور ہوتی ہیں۔
+درود سے قیامت کے دن شفاعت ملے گی۔
+
+سبسکرائب کریں۔
+اللہ حافظ۔""",
+        "captions": [
+            "اللہ اور فرشتے نبی ﷺ پر درود بھیجتے ہیں",
+            "اے ایمان والو! تم بھی درود بھیجو",
+            "نبی ﷺ نے فرمایا",
+            "ایک درود پر دس رحمتیں",
+            "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ",
+            "جمعہ کا دن درود کا خاص دن ہے",
+            "کثرت سے درود پڑھیں",
+            "درود سے گناہ معاف ہوتے ہیں",
+            "درود سے پریشانیاں دور ہوتی ہیں",
+            "سبسکرائب کریں",
+        ],
+        "category": "Hadith"
+    },
+    "namaz_importance": {
+        "title": "Importance of Prayer",
+        "title_urdu": "نماز کی اہمیت",
+        "arabic_text": "إِنَّ الصَّلَاةَ تَنْهَىٰ عَنِ الْفَحْشَاءِ وَالْمُنكَرِ",
+        "arabic_source": "Surah Al-Ankabut 29:45",
+        "arabic_verified": True,
+        "script_urdu": """اللہ تعالیٰ فرماتے ہیں:
+بے شک نماز بے حیائی اور برے کاموں سے روکتی ہے۔
+
+نماز دین کا ستون ہے۔
+نماز مومن کی معراج ہے۔
+نماز اللہ سے سیدھا رابطہ ہے۔
+
+نبی صلی اللہ علیہ وسلم نے فرمایا:
+قیامت کے دن سب سے پہلے نماز کا حساب ہوگا۔
+اگر نماز درست ہوئی تو سب درست۔
+اگر نماز خراب ہوئی تو سب خراب۔
+
+پانچ نمازیں لازم ہیں۔
+فجر، ظہر، عصر، مغرب، عشاء۔
+
+نماز وقت پر پڑھیں۔
+نماز جماعت سے پڑھیں۔
+نماز خشوع سے پڑھیں۔
+
+سبسکرائب کریں۔
+اللہ حافظ۔""",
+        "captions": [
+            "نماز بے حیائی سے روکتی ہے",
+            "نماز دین کا ستون ہے",
+            "نماز مومن کی معراج ہے",
+            "نبی ﷺ نے فرمایا",
+            "قیامت کے دن پہلے نماز کا حساب",
+            "نماز درست تو سب درست",
+            "پانچ نمازیں لازم ہیں",
+            "فجر، ظہر، عصر، مغرب، عشاء",
+            "نماز وقت پر پڑھیں",
+            "نماز جماعت سے پڑھیں",
+            "سبسکرائب کریں",
         ],
         "category": "Quran"
     },
@@ -745,23 +924,55 @@ with tab2:
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.markdown('<div class="section-header">🎙️ Voice Settings</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🎙️ Urdu Voice Settings</div>', unsafe_allow_html=True)
 
-        voice_options = {
-            "🇵🇰 Urdu - Male (Asad)": "ur-PK-AsadNeural",
+        urdu_voice_options = {
+            "🇵🇰 Urdu - Male (Asad) - Recommended": "ur-PK-AsadNeural",
             "🇵🇰 Urdu - Female (Uzma)": "ur-PK-UzmaNeural",
-            "🇸🇦 Arabic - Male (Hamed)": "ar-SA-HamedNeural",
-            "🇸🇦 Arabic - Female (Zariyah)": "ar-SA-ZariyahNeural",
-            "🇮🇳 Hindi - Male (Madhur)": "hi-IN-MadhurNeural",
-            "🇮🇳 Hindi - Female (Swara)": "hi-IN-SwaraNeural",
+            "🇮🇳 Urdu India - Male (Salman)": "ur-IN-SalmanNeural",
+            "🇮🇳 Urdu India - Female (Gul)": "ur-IN-GulNeural",
         }
 
-        selected_voice = st.selectbox("Select Voice", list(voice_options.keys()))
-        st.session_state.project['voice'] = voice_options[selected_voice]
+        selected_urdu_voice = st.selectbox("Urdu Voice", list(urdu_voice_options.keys()))
+        st.session_state.project['voice'] = urdu_voice_options[selected_urdu_voice]
 
-        speed = st.slider("🏃 Speed", min_value=-30, max_value=30, value=-5, step=5,
+        speed = st.slider("🏃 Speech Speed", min_value=-30, max_value=30, value=-10, step=5,
                          help="Negative = slower, Positive = faster")
         st.session_state.project['voice_speed'] = f"{speed:+d}%"
+
+        urdu_pitch = st.slider("🔊 Voice Depth (Urdu)", min_value=-30, max_value=10, value=-15, step=5,
+                              help="Negative = deeper/gunjhti voice, Positive = higher")
+        st.session_state.project['urdu_pitch'] = f"{urdu_pitch:+d}Hz"
+
+        st.markdown("---")
+
+        st.markdown('<div class="section-header">📖 Arabic Recitation</div>', unsafe_allow_html=True)
+
+        include_arabic = st.checkbox(
+            "✅ Include Arabic Recitation",
+            value=st.session_state.project.get('include_arabic_recitation', True),
+            help="Pehle Arabic hadith/ayat recite hogi, phir Urdu explanation"
+        )
+        st.session_state.project['include_arabic_recitation'] = include_arabic
+
+        if include_arabic:
+            arabic_voice_options = {
+                "🇸🇦 Saudi - Male (Hamed) - Recommended": "ar-SA-HamedNeural",
+                "🇸🇦 Saudi - Female (Zariyah)": "ar-SA-ZariyahNeural",
+                "🇪🇬 Egyptian - Male (Shakir)": "ar-EG-ShakirNeural",
+                "🇪🇬 Egyptian - Female (Salma)": "ar-EG-SalmaNeural",
+                "🇦🇪 UAE - Male (Hamdan)": "ar-AE-HamdanNeural",
+                "🇯🇴 Jordanian - Male (Taim)": "ar-JO-TaimNeural",
+            }
+
+            selected_arabic_voice = st.selectbox("Arabic Voice", list(arabic_voice_options.keys()))
+            st.session_state.project['arabic_voice'] = arabic_voice_options[selected_arabic_voice]
+
+            arabic_pitch = st.slider("🎵 Arabic Pitch", min_value=-20, max_value=20, value=-5, step=5,
+                                    help="Adjust for melodious recitation feel")
+            st.session_state.project['arabic_pitch'] = f"{arabic_pitch:+d}Hz"
+
+            st.info("💡 Arabic hadith/ayat pehle recite hogi sureeli awaz me")
 
         st.markdown("---")
 
@@ -945,67 +1156,80 @@ with tab5:
     with col2:
         st.markdown('<div class="section-header">🎬 Generate Video</div>', unsafe_allow_html=True)
 
-        ready = sum(checks.values()) >= 3  # At least 3 items checked (more lenient)
+        # Check if script exists
+        has_script = bool(st.session_state.project.get('script_urdu', '').strip())
 
-        if ready:
-            if st.button("🚀 Generate Video", type="primary", use_container_width=True):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
+        if not has_script:
+            st.warning("⚠️ Pehle Content tab me script add karein!")
 
-                try:
-                    from generate_video import generate_video
+        # Always show button
+        if st.button("🚀 GENERATE VIDEO", type="primary", use_container_width=True, disabled=not has_script):
+            progress_bar = st.progress(0)
+            status_text = st.empty()
 
-                    def update_progress(pct, msg):
-                        progress_bar.progress(pct)
-                        status_text.text(msg)
+            try:
+                status_text.text("🔄 Starting...")
+                progress_bar.progress(5)
 
-                    # Generate unique filename
-                    import datetime
-                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    output_name = f"halal_video_{timestamp}"
+                from generate_video import generate_video
 
-                    # Get project data
-                    proj = st.session_state.project
+                def update_progress(pct, msg):
+                    progress_bar.progress(min(pct, 100))
+                    status_text.text(msg)
 
-                    # Generate the video
-                    video_path, audio_path = generate_video(
-                        script_urdu=proj.get('script_urdu', ''),
-                        title_urdu=proj.get('title_urdu', ''),
-                        arabic_text=proj.get('arabic_text', ''),
-                        captions=proj.get('captions', []),
-                        voice=proj.get('voice', 'ur-PK-AsadNeural'),
-                        voice_speed=proj.get('voice_speed', '-5%'),
-                        output_name=output_name,
-                        progress_callback=update_progress
+                # Generate unique filename
+                import datetime
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_name = f"halal_video_{timestamp}"
+
+                # Get project data
+                proj = st.session_state.project
+
+                # Generate the video
+                video_path, audio_path = generate_video(
+                    script_urdu=proj.get('script_urdu', ''),
+                    title_urdu=proj.get('title_urdu', ''),
+                    arabic_text=proj.get('arabic_text', ''),
+                    captions=proj.get('captions', []),
+                    voice=proj.get('voice', 'ur-PK-AsadNeural'),
+                    arabic_voice=proj.get('arabic_voice', 'ar-SA-HamedNeural'),
+                    voice_speed=proj.get('voice_speed', '-10%'),
+                    urdu_pitch=proj.get('urdu_pitch', '-15Hz'),
+                    arabic_pitch=proj.get('arabic_pitch', '-5Hz'),
+                    include_arabic_recitation=proj.get('include_arabic_recitation', True),
+                    output_name=output_name,
+                    progress_callback=update_progress
+                )
+
+                st.success("🎉 Video generated successfully!")
+
+                # Show video
+                st.video(str(video_path))
+
+                # Download button
+                with open(video_path, 'rb') as f:
+                    st.download_button(
+                        "⬇️ Download Video",
+                        f,
+                        file_name=f"{output_name}.mp4",
+                        mime="video/mp4",
+                        use_container_width=True
                     )
 
-                    st.success("🎉 Video generated successfully!")
+                # File info
+                size_mb = os.path.getsize(video_path) / (1024*1024)
+                st.caption(f"📁 {video_path.name} ({size_mb:.1f} MB)")
 
-                    # Show video
-                    st.video(str(video_path))
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
+                import traceback
+                st.code(traceback.format_exc())
 
-                    # Download button
-                    with open(video_path, 'rb') as f:
-                        st.download_button(
-                            "⬇️ Download Video",
-                            f,
-                            file_name=f"{output_name}.mp4",
-                            mime="video/mp4",
-                            use_container_width=True
-                        )
-
-                    # File info
-                    size_mb = os.path.getsize(video_path) / (1024*1024)
-                    st.caption(f"📁 {video_path.name} ({size_mb:.1f} MB)")
-
-                except Exception as e:
-                    st.error(f"❌ Error: {e}")
-                    import traceback
-                    st.code(traceback.format_exc())
-        else:
-            st.warning("⚠️ Please complete required fields:")
-
-            missing = [k for k, v in checks.items() if not v]
+        # Show tips
+        st.markdown("---")
+        st.markdown("**💡 Tips:**")
+        missing = [k for k, v in checks.items() if not v]
+        if missing:
             for item in missing:
                 st.markdown(f"• {item}")
 
