@@ -18,6 +18,8 @@ nest_asyncio.apply()
 sys.path.insert(0, str(Path(__file__).parent))
 
 from config import OUTPUT_DIR, ASSETS_DIR
+from src.content_categories import CONTENT_CATEGORIES, get_category, list_categories
+from src.script_generator import get_script_generator
 
 # Page config
 st.set_page_config(
@@ -753,13 +755,19 @@ if 'project' not in st.session_state:
         'arabic_source': '',
         'script_urdu': '',
         'captions': [],
+        'tts_provider': 'edge',
         'voice': 'ur-PK-AsadNeural',
-        'voice_speed': '-5%',
-        'bg_type': 'nature',
+        'voice_speed': '-22%',  # Slower = storytelling style
+        'urdu_pitch': '-15Hz',  # Deeper = calmer, natural
+        'arabic_voice': 'ar-SA-HamedNeural',
+        'arabic_pitch': '-8Hz',  # Slightly deeper Arabic
+        'include_arabic_recitation': True,
+        'bg_type': 'animated',
         'text_style': 'centered',
-        'text_animation': 'fade',
+        'text_effect': 'fade',
         'audio_path': None,
         'video_path': None,
+        'content_category': 'halal',  # Default category
     }
 
 # ============== HEADER ==============
@@ -767,22 +775,106 @@ st.markdown('<div class="main-header">🕌 Halal Video Editor</div>', unsafe_all
 
 # ============== SIDEBAR ==============
 with st.sidebar:
-    st.markdown("### ☪️ Quick Templates")
+    st.markdown("### 🎬 Content Category")
+
+    # Category selector with visual styling
+    category_options = {cat_id: cat_data["name"] for cat_id, cat_data in CONTENT_CATEGORIES.items()}
+
+    selected_category = st.selectbox(
+        "Choose Category",
+        options=list(category_options.keys()),
+        format_func=lambda x: category_options[x],
+        index=list(category_options.keys()).index(st.session_state.project.get('content_category', 'halal')),
+        label_visibility="collapsed"
+    )
+
+    # Update session state
+    st.session_state.project['content_category'] = selected_category
+
+    # Show category info
+    cat_info = get_category(selected_category)
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #1a2744 0%, #0f1a2e 100%);
+                padding: 10px; border-radius: 10px; margin: 8px 0;
+                border: 1px solid rgba(255,215,0,0.2); font-size: 0.85rem;">
+        <div style="color: #888;">
+            {cat_info['description']}
+        </div>
+        <div style="color: #666; margin-top: 5px; font-size: 0.75rem;">
+            Mood: {cat_info['mood']} | Style: {cat_info['scenery']}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("---")
 
-    # Template selection
-    for key, template in TEMPLATES.items():
-        with st.container():
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"**{template['title_urdu']}**")
-                st.caption(f"{template['title']} • {template['category']}")
-            with col2:
-                if st.button("Load", key=f"load_{key}", use_container_width=True):
-                    st.session_state.project.update(template)
-                    st.success("Template loaded!")
-                    st.rerun()
-            st.markdown("---")
+    # ============ AUTO GENERATE SCRIPT ============
+    st.markdown("### 🎲 Auto Generate Script")
+
+    script_gen = get_script_generator()
+    current_category = st.session_state.project.get('content_category', 'halal')
+
+    # Show available templates for this category
+    template_titles = script_gen.get_template_titles(current_category)
+
+    if template_titles:
+        st.markdown(f"**{len(template_titles)} scripts available for {cat_info['name']}**")
+
+        # Random generate button
+        if st.button("🎲 Generate Random Script", use_container_width=True, type="primary"):
+            new_script = script_gen.generate_script(current_category)
+            st.session_state.project['title_urdu'] = new_script['title_urdu']
+            st.session_state.project['script_urdu'] = new_script['script_urdu']
+            st.session_state.project['arabic_text'] = new_script.get('arabic_text', '')
+            st.session_state.project['arabic_source'] = new_script.get('arabic_source', '')
+            # Auto-generate captions
+            lines = [l.strip() for l in new_script['script_urdu'].split('\n') if l.strip() and len(l.strip()) > 5]
+            st.session_state.project['captions'] = lines
+            st.toast(f"✅ Generated: {new_script['title_urdu']}", icon="🎲")
+            st.rerun()
+
+        # Select specific template
+        selected_title = st.selectbox(
+            "Or choose specific script",
+            [""] + template_titles,
+            format_func=lambda x: x if x else "-- Select --"
+        )
+
+        if selected_title:
+            if st.button(f"📥 Load: {selected_title}", use_container_width=True):
+                new_script = script_gen.get_template_by_title(current_category, selected_title)
+                st.session_state.project['title_urdu'] = new_script['title_urdu']
+                st.session_state.project['script_urdu'] = new_script['script_urdu']
+                st.session_state.project['arabic_text'] = new_script.get('arabic_text', '')
+                st.session_state.project['arabic_source'] = new_script.get('arabic_source', '')
+                lines = [l.strip() for l in new_script['script_urdu'].split('\n') if l.strip() and len(l.strip()) > 5]
+                st.session_state.project['captions'] = lines
+                st.toast(f"✅ Loaded: {selected_title}", icon="✅")
+                st.rerun()
+
+    st.markdown("---")
+
+    st.markdown("### ☪️ Islamic Templates")
+
+    # Template dropdown selection (for Islamic only)
+    islamic_templates = {key: f"{t['title_urdu']} - {t['title']}" for key, t in TEMPLATES.items()}
+    islamic_templates = {"": "-- Select Template --", **islamic_templates}
+
+    selected_template = st.selectbox(
+        "Choose Template",
+        options=list(islamic_templates.keys()),
+        format_func=lambda x: islamic_templates[x],
+        label_visibility="collapsed"
+    )
+
+    if selected_template and selected_template in TEMPLATES:
+        template = TEMPLATES[selected_template]
+        if st.button("📥 Load This Template", use_container_width=True):
+            st.session_state.project.update(template)
+            st.toast("✅ Template loaded!", icon="✅")
+            st.rerun()
+
+    st.markdown("---")
 
     st.markdown("### 💾 Project")
 
@@ -836,47 +928,88 @@ with tab1:
             placeholder="مثال: مسکرانے کی طاقت"
         )
 
-        st.markdown('<div class="section-header">📖 Arabic Text (Hadith/Ayat)</div>', unsafe_allow_html=True)
+        # Only show Arabic section for Islamic category
+        is_islamic_category = st.session_state.project.get('content_category', 'halal') == 'halal'
 
-        st.session_state.project['arabic_text'] = st.text_area(
-            "Arabic Text",
-            value=st.session_state.project.get('arabic_text', ''),
-            placeholder="تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ صَدَقَةٌ",
-            height=80
-        )
+        if is_islamic_category:
+            st.markdown('<div class="section-header">📖 Arabic Text (Hadith/Ayat)</div>', unsafe_allow_html=True)
 
-        if st.session_state.project['arabic_text']:
-            st.markdown(f'<div class="arabic-text">{st.session_state.project["arabic_text"]}</div>', unsafe_allow_html=True)
+            st.session_state.project['arabic_text'] = st.text_area(
+                "Arabic Text",
+                value=st.session_state.project.get('arabic_text', ''),
+                placeholder="تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ صَدَقَةٌ",
+                height=80
+            )
 
-        st.session_state.project['arabic_source'] = st.text_input(
-            "📚 Source Reference",
-            value=st.session_state.project.get('arabic_source', ''),
-            placeholder="e.g., Jami` at-Tirmidhi 1956"
-        )
+            if st.session_state.project['arabic_text']:
+                st.markdown(f'<div class="arabic-text">{st.session_state.project["arabic_text"]}</div>', unsafe_allow_html=True)
 
-        st.session_state.project['arabic_verified'] = st.checkbox(
-            "✅ I have verified this from authentic sources",
-            value=st.session_state.project.get('arabic_verified', False)
-        )
+            st.session_state.project['arabic_source'] = st.text_input(
+                "📚 Source Reference",
+                value=st.session_state.project.get('arabic_source', ''),
+                placeholder="e.g., Jami` at-Tirmidhi 1956"
+            )
 
-        if st.session_state.project['arabic_verified']:
-            st.markdown('<span class="badge-verified">✓ Verified</span>', unsafe_allow_html=True)
+            st.session_state.project['arabic_verified'] = st.checkbox(
+                "✅ I have verified this from authentic sources",
+                value=st.session_state.project.get('arabic_verified', False)
+            )
+
+            if st.session_state.project['arabic_verified']:
+                st.markdown('<span class="badge-verified">✓ Verified</span>', unsafe_allow_html=True)
+        else:
+            # Clear Arabic fields for non-Islamic categories
+            st.session_state.project['arabic_text'] = ''
+            st.session_state.project['arabic_source'] = ''
+            st.session_state.project['include_arabic_recitation'] = False
 
     with col2:
         st.markdown('<div class="section-header">📜 Script (Urdu)</div>', unsafe_allow_html=True)
 
+        # RTL text area with custom styling
+        st.markdown("""
+        <style>
+        textarea[aria-label="اسکرپٹ لکھیں"] {
+            direction: rtl !important;
+            text-align: right !important;
+            font-family: 'Amiri', serif !important;
+            font-size: 1.1rem !important;
+            line-height: 2 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         st.session_state.project['script_urdu'] = st.text_area(
             "اسکرپٹ لکھیں",
             value=st.session_state.project.get('script_urdu', ''),
-            height=350,
+            height=300,
             placeholder="""رسول اللہ صلی اللہ علیہ وسلم نے فرمایا:
 اپنے بھائی کے سامنے مسکرانا صدقہ ہے۔
 
 آج ہم اس خوبصورت حدیث کو سمجھیں گے..."""
         )
 
+        # Copy button and script preview
         if st.session_state.project['script_urdu']:
-            st.markdown(f'<div class="urdu-text">{st.session_state.project["script_urdu"][:400]}...</div>', unsafe_allow_html=True)
+            col_a, col_b = st.columns([1, 1])
+            with col_a:
+                if st.button("📋 Copy Script", use_container_width=True):
+                    st.code(st.session_state.project['script_urdu'], language=None)
+                    st.toast("Script shown above - Select & Copy!", icon="📋")
+            with col_b:
+                word_count = len(st.session_state.project['script_urdu'].split())
+                st.metric("Words", word_count)
+
+            # RTL preview
+            st.markdown(f'''
+            <div style="direction: rtl; text-align: right; padding: 15px;
+                        background: linear-gradient(135deg, rgba(20,30,50,0.9) 0%, rgba(30,40,60,0.9) 100%);
+                        border-radius: 10px; border: 1px solid rgba(255,215,0,0.2);
+                        font-family: 'Amiri', serif; font-size: 1.1rem; line-height: 2;
+                        color: #e0e0e0; max-height: 200px; overflow-y: auto;">
+                {st.session_state.project["script_urdu"]}
+            </div>
+            ''', unsafe_allow_html=True)
 
     # Captions
     st.markdown("---")
@@ -924,57 +1057,93 @@ with tab2:
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.markdown('<div class="section-header">🎙️ Urdu Voice Settings</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🎙️ Voice Settings (FREE)</div>', unsafe_allow_html=True)
 
-        urdu_voice_options = {
-            "🇵🇰 Urdu - Male (Asad) - Recommended": "ur-PK-AsadNeural",
-            "🇵🇰 Urdu - Female (Uzma)": "ur-PK-UzmaNeural",
-            "🇮🇳 Urdu India - Male (Salman)": "ur-IN-SalmanNeural",
-            "🇮🇳 Urdu India - Female (Gul)": "ur-IN-GulNeural",
-        }
+        # Show category voice recommendation
+        current_cat = get_category(st.session_state.project.get('content_category', 'halal'))
+        cat_voices = current_cat.get('voices', {})
+        if cat_voices:
+            recommended_voice = cat_voices.get('urdu', 'ur-PK-AsadNeural')
+            st.markdown(f"""
+            <div style="background: rgba(30,58,95,0.4); padding: 10px; border-radius: 8px; margin-bottom: 10px;
+                        border-left: 3px solid #ffd700; font-size: 0.85rem;">
+                <span style="color: #ffd700;">Category:</span> {current_cat['name']}<br>
+                <span style="color: #888;">Recommended voice style for {current_cat['mood']} mood</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.session_state.project['tts_provider'] = 'edge'  # Always Edge TTS (free)
+
+        # Voice options based on category
+        is_kids_category = st.session_state.project.get('content_category') == 'kids'
+
+        # Different voice options for kids vs other categories
+        if is_kids_category:
+            st.markdown("**🎙️ Voice Selection** (Kids - Female recommended)")
+            urdu_voice_options = {
+                "🇵🇰 Uzma (Female - Kids Recommended)": "ur-PK-UzmaNeural",
+                "🇵🇰 Asad (Male)": "ur-PK-AsadNeural",
+            }
+        else:
+            st.markdown("**🎙️ Voice Selection**")
+            urdu_voice_options = {
+                "🇵🇰 Asad (Pakistan - Recommended)": "ur-PK-AsadNeural",
+                "🇮🇳 Salman (India)": "ur-IN-SalmanNeural",
+                "🇵🇰 Uzma (Female)": "ur-PK-UzmaNeural",
+            }
 
         selected_urdu_voice = st.selectbox("Urdu Voice", list(urdu_voice_options.keys()))
         st.session_state.project['voice'] = urdu_voice_options[selected_urdu_voice]
 
-        speed = st.slider("🏃 Speech Speed", min_value=-30, max_value=30, value=-10, step=5,
-                         help="Negative = slower, Positive = faster")
+        st.markdown("**⚙️ Natural Voice Settings**")
+
+        speed = st.slider("🏃 Speech Speed", min_value=-35, max_value=-10, value=-22, step=1,
+                         help="-20% to -28% sounds most natural for storytelling")
         st.session_state.project['voice_speed'] = f"{speed:+d}%"
 
-        urdu_pitch = st.slider("🔊 Voice Depth (Urdu)", min_value=-30, max_value=10, value=-15, step=5,
-                              help="Negative = deeper/gunjhti voice, Positive = higher")
+        urdu_pitch = st.slider("🔊 Voice Depth", min_value=-25, max_value=-8, value=-15, step=1,
+                              help="-15Hz to -20Hz for deeper, calmer male voice")
         st.session_state.project['urdu_pitch'] = f"{urdu_pitch:+d}Hz"
 
-        st.markdown("---")
-
-        st.markdown('<div class="section-header">📖 Arabic Recitation</div>', unsafe_allow_html=True)
-
-        include_arabic = st.checkbox(
-            "✅ Include Arabic Recitation",
-            value=st.session_state.project.get('include_arabic_recitation', True),
-            help="Pehle Arabic hadith/ayat recite hogi, phir Urdu explanation"
-        )
-        st.session_state.project['include_arabic_recitation'] = include_arabic
-
-        if include_arabic:
-            arabic_voice_options = {
-                "🇸🇦 Saudi - Male (Hamed) - Recommended": "ar-SA-HamedNeural",
-                "🇸🇦 Saudi - Female (Zariyah)": "ar-SA-ZariyahNeural",
-                "🇪🇬 Egyptian - Male (Shakir)": "ar-EG-ShakirNeural",
-                "🇪🇬 Egyptian - Female (Salma)": "ar-EG-SalmaNeural",
-                "🇦🇪 UAE - Male (Hamdan)": "ar-AE-HamdanNeural",
-                "🇯🇴 Jordanian - Male (Taim)": "ar-JO-TaimNeural",
-            }
-
-            selected_arabic_voice = st.selectbox("Arabic Voice", list(arabic_voice_options.keys()))
-            st.session_state.project['arabic_voice'] = arabic_voice_options[selected_arabic_voice]
-
-            arabic_pitch = st.slider("🎵 Arabic Pitch", min_value=-20, max_value=20, value=-5, step=5,
-                                    help="Adjust for melodious recitation feel")
-            st.session_state.project['arabic_pitch'] = f"{arabic_pitch:+d}Hz"
-
-            st.info("💡 Arabic hadith/ayat pehle recite hogi sureeli awaz me")
+        st.info("""
+        💡 **Natural Voice Tips:**
+        - Speed: -20% to -28% (slower = storytelling style)
+        - Pitch: -15Hz to -20Hz (deeper = natural calm)
+        - System automatically adds pauses at punctuation
+        - Use "..." in script for extra pauses
+        """)
 
         st.markdown("---")
+
+        # Only show Arabic recitation for Islamic category
+        is_islamic = st.session_state.project.get('content_category', 'halal') == 'halal'
+
+        if is_islamic:
+            st.markdown('<div class="section-header">📖 Arabic Recitation</div>', unsafe_allow_html=True)
+
+            include_arabic = st.checkbox(
+                "✅ Include Arabic Recitation",
+                value=st.session_state.project.get('include_arabic_recitation', True),
+                help="Pehle Arabic hadith/ayat recite hogi"
+            )
+            st.session_state.project['include_arabic_recitation'] = include_arabic
+
+            if include_arabic:
+                st.markdown("**📖 Arabic Male Voices**")
+
+                arabic_voice_options = {
+                    "🇸🇦 Hamed (Saudi) - Qari Style": "ar-SA-HamedNeural",
+                    "🇪🇬 Shakir (Egyptian)": "ar-EG-ShakirNeural",
+                    "🇦🇪 Hamdan (UAE)": "ar-AE-HamdanNeural",
+                }
+
+                selected_arabic_voice = st.selectbox("Arabic Voice", list(arabic_voice_options.keys()))
+                st.session_state.project['arabic_voice'] = arabic_voice_options[selected_arabic_voice]
+
+                arabic_pitch = st.slider("🎵 Arabic Voice Depth", min_value=-15, max_value=0, value=-5, step=1)
+                st.session_state.project['arabic_pitch'] = f"{arabic_pitch:+d}Hz"
+
+            st.markdown("---")
 
         st.markdown('<div class="section-header">📤 Or Upload Audio</div>', unsafe_allow_html=True)
 
@@ -1027,30 +1196,67 @@ with tab3:
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.markdown('<div class="section-header">🖼️ Background</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🖼️ Background Style</div>', unsafe_allow_html=True)
 
-        bg_type = st.radio(
-            "Background Type",
-            ["🌙 Animated (Stars & Moon)", "🌿 Nature Videos", "🎨 Solid Color"],
-            index=0
+        # Get current category info
+        current_cat = get_category(st.session_state.project.get('content_category', 'halal'))
+        cat_name = current_cat['name']
+        cat_scenery = current_cat['scenery']
+
+        # Show category-based scenery
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(30,58,95,0.6) 0%, rgba(13,37,63,0.6) 100%);
+                    padding: 15px; border-radius: 12px; margin-bottom: 15px;
+                    border: 1px solid rgba(255,215,0,0.3);">
+            <div style="color: #ffd700; font-size: 1.1rem; margin-bottom: 8px;">
+                {cat_name}
+            </div>
+            <div style="color: #aaa; font-size: 0.9rem;">
+                Scenery: <span style="color: #8aff8a;">{cat_scenery}</span>
+            </div>
+            <div style="color: #888; font-size: 0.8rem; margin-top: 5px;">
+                Elements: {', '.join(current_cat['elements'][:4])}...
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Background mode options
+        bg_mode_options = {
+            "🎬 Category Scenery (Animated backgrounds)": "scenery",
+            "🌈 Dynamic (Changes with content keywords)": "dynamic",
+            "🌙 Classic Night (Stars & Moon)": "animated",
+            "🎨 Static (Simple gradient)": "static",
+        }
+
+        selected_bg = st.radio(
+            "Background Mode",
+            list(bg_mode_options.keys()),
+            index=0,
+            help="Category scenery uses animated backgrounds based on your selected content type"
         )
+        st.session_state.project['bg_mode'] = bg_mode_options[selected_bg]
 
-        st.session_state.project['bg_type'] = bg_type
-
-        if "Animated" in bg_type:
-            anim_style = st.selectbox(
-                "Animation Style",
-                ["Starfield with Crescent Moon", "Floating Particles", "Geometric Islamic Pattern"]
-            )
-
-        elif "Nature" in bg_type:
-            st.info("🔑 Pexels API key needed for nature videos")
-            pexels_key = st.text_input("Pexels API Key", type="password")
-
+        if "Category" in selected_bg:
+            st.success(f"✨ Using {cat_scenery} scenery!")
+            st.markdown(f"""
+            **Category Scenery Styles:**
+            - 🕌 **halal**: Islamic village with mosque, minarets, stars
+            - 👻 **horror**: Dark fog, bats, abandoned houses
+            - 🔍 **mystery**: Noir city, rain, streetlights
+            - 🧒 **kids**: Sunny village, butterflies, rainbow
+            - 💪 **motivational**: Sunrise mountains, birds
+            - 📜 **history**: Ancient ruins, torches
+            - 🔬 **science**: Space, planets, nebula
+            - 💕 **poetry**: Moonlit garden, roses
+            - 📰 **facts**: Minimal, clean
+            - 🎮 **gaming**: Neon cyber grid
+            """)
+        elif "Dynamic" in selected_bg:
+            st.info("🌈 Colors change based on content keywords")
+        elif "Classic" in selected_bg:
+            st.info("🌙 Classic Islamic starfield with crescent moon")
         else:
-            bg_color = st.color_picker("Background Color", "#0f1724")
-
-        st.slider("🔅 Background Brightness", 0, 100, 30, help="Lower = darker background")
+            st.info("🎨 Simple gradient background")
 
     with col2:
         st.markdown('<div class="section-header">✨ Text Style</div>', unsafe_allow_html=True)
@@ -1061,11 +1267,25 @@ with tab3:
             index=0
         )
 
+        # Text effect mapping
+        text_effect_options = {
+            "Fade In/Out (Recommended)": "fade",
+            "Word by Word (Karaoke)": "karaoke",
+            "Typewriter Effect": "typewriter",
+            "Slide from Left": "slide_left",
+            "Slide from Right": "slide_right",
+            "Slide Up": "slide_up",
+            "Zoom In": "zoom",
+            "No Animation": "none",
+        }
+
         text_animation = st.selectbox(
-            "Animation Style",
-            ["Word by Word (Karaoke)", "Fade In/Out", "Slide Up", "Typewriter"],
-            index=0
+            "Caption Animation Style",
+            list(text_effect_options.keys()),
+            index=0,
+            help="Choose how captions appear on screen"
         )
+        st.session_state.project['text_effect'] = text_effect_options[text_animation]
 
         st.markdown("---")
 
@@ -1076,29 +1296,126 @@ with tab3:
         if show_bg:
             bg_opacity = st.slider("Background Opacity", 0, 100, 80)
 
+    # Background Audio Section
+    st.markdown("---")
+    st.markdown('<div class="section-header">🔊 Background Audio (ASMR)</div>', unsafe_allow_html=True)
+
+    col_audio1, col_audio2 = st.columns([2, 1])
+
+    with col_audio1:
+        bg_audio_options = {
+            "None": "",
+            "🌬️ Wind / Breeze (Horror, Mystery)": "wind",
+            "🌧️ Rain (Calm, Sad)": "rain",
+            "🔥 Fire Crackle (Warm, Cozy)": "fire",
+            "🌙 Night Ambient (Islamic, Poetry)": "night",
+        }
+
+        selected_bg_audio = st.selectbox(
+            "Background Sound",
+            list(bg_audio_options.keys()),
+            index=0,
+            help="Add ambient ASMR sound to your video"
+        )
+        st.session_state.project['background_audio'] = bg_audio_options[selected_bg_audio]
+
+    with col_audio2:
+        if st.session_state.project.get('background_audio'):
+            bg_volume = st.slider("Volume", 10, 50, 30, help="Background audio volume %")
+            st.session_state.project['background_volume'] = bg_volume / 100.0
+        else:
+            st.session_state.project['background_volume'] = 0.3
+
+    # ============ CAPTION VISUALS (AI Images) ============
+    st.markdown("---")
+    st.markdown('<div class="section-header">🖼️ Caption Visuals (AI Images)</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="background: rgba(30,58,95,0.3); padding: 12px; border-radius: 10px; margin-bottom: 15px;
+                border: 1px solid rgba(255,215,0,0.2); font-size: 0.9rem;">
+        <b>AI Image Generation</b> - ہر caption کے لیے AI automatically matching image generate کرے گا۔
+        Images will blend smoothly with the background during each caption.
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_vis1, col_vis2 = st.columns([2, 1])
+
+    with col_vis1:
+        auto_gen_images = st.checkbox(
+            "🤖 Auto-Generate AI Images for Captions",
+            value=st.session_state.project.get('auto_generate_images', False),
+            help="AI will generate matching images for each caption (uses free Pollinations.ai API - may be slow)"
+        )
+        st.session_state.project['auto_generate_images'] = auto_gen_images
+
+        if auto_gen_images:
+            st.warning("⚠️ AI image generation is slow and may fail due to rate limits. Video will still work without images.")
+
+    with col_vis2:
+        if auto_gen_images:
+            image_style_options = {
+                "🎬 Cinematic": "cinematic",
+                "👻 Dark/Horror": "dark",
+                "✨ Fantasy": "fantasy",
+                "📷 Realistic": "realistic",
+                "🎨 Anime": "anime",
+                "⬜ Minimal": "minimal",
+            }
+            selected_style = st.selectbox(
+                "Image Style",
+                list(image_style_options.keys()),
+                index=0 if st.session_state.project.get('content_category') != 'horror' else 1
+            )
+            st.session_state.project['image_style'] = image_style_options[selected_style]
+
+    if auto_gen_images:
+        captions = st.session_state.project.get('captions', [])
+        if captions:
+            st.success(f"✨ AI will generate {len(captions)} images during video creation")
+        else:
+            st.warning("⚠️ Pehle captions add karein (Content tab mein)")
+
 
 # ============== TAB 4: PREVIEW ==============
 with tab4:
     st.markdown('<div class="section-header">▶️ Video Preview</div>', unsafe_allow_html=True)
 
-    # Preview box
-    arabic_text = st.session_state.project.get('arabic_text', 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ')
+    # Preview box - conditionally show Arabic for Islamic category only
+    is_islamic_preview = st.session_state.project.get('content_category', 'halal') == 'halal'
     title_urdu = st.session_state.project.get('title_urdu', 'عنوان')
     sample_caption = st.session_state.project.get('captions', ['مثال کیپشن'])[0] if st.session_state.project.get('captions') else 'مثال کیپشن'
 
-    st.markdown(f"""
-    <div class="preview-box">
-        <div style="color: #ffd700; font-family: 'Scheherazade New', serif; font-size: 1.8rem; margin-bottom: 15px; direction: rtl; text-shadow: 0 2px 10px rgba(255,215,0,0.5);">
-            {arabic_text}
+    if is_islamic_preview:
+        arabic_text = st.session_state.project.get('arabic_text', 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ')
+        st.markdown(f"""
+        <div class="preview-box">
+            <div style="color: #ffd700; font-family: 'Scheherazade New', serif; font-size: 1.8rem; margin-bottom: 15px; direction: rtl; text-shadow: 0 2px 10px rgba(255,215,0,0.5);">
+                {arabic_text}
+            </div>
+            <div style="color: #a0a0a0; font-size: 0.9rem; margin-bottom: 30px;">
+                {st.session_state.project.get('arabic_source', '')}
+            </div>
+            <div class="caption-preview">
+                {sample_caption}
+            </div>
         </div>
-        <div style="color: #a0a0a0; font-size: 0.9rem; margin-bottom: 30px;">
-            {st.session_state.project.get('arabic_source', '')}
+        """, unsafe_allow_html=True)
+    else:
+        # Non-Islamic preview - no Arabic, show title and caption only
+        cat_info = get_category(st.session_state.project.get('content_category', 'halal'))
+        st.markdown(f"""
+        <div class="preview-box">
+            <div style="color: #ffd700; font-size: 1.5rem; margin-bottom: 15px; direction: rtl; text-align: center;">
+                {cat_info['name']}
+            </div>
+            <div style="color: #a0a0a0; font-size: 1.2rem; margin-bottom: 20px; direction: rtl; text-align: center;">
+                {title_urdu}
+            </div>
+            <div class="caption-preview">
+                {sample_caption}
+            </div>
         </div>
-        <div class="caption-preview">
-            {sample_caption}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -1123,29 +1440,50 @@ with tab5:
     with col1:
         st.markdown('<div class="section-header">⚙️ Export Settings</div>', unsafe_allow_html=True)
 
-        resolution = st.selectbox(
+        resolution_options = {
+            "1080p (1920×1080) - YouTube": "1080p",
+            "720p (1280×720)": "720p",
+            "9:16 (1080×1920) - TikTok/Reels": "tiktok"
+        }
+
+        selected_res = st.selectbox(
             "Resolution",
-            ["1080p (1920×1080) - YouTube", "720p (1280×720)", "9:16 (1080×1920) - TikTok/Reels"]
+            list(resolution_options.keys()),
+            index=0
         )
+        st.session_state.project['resolution'] = resolution_options[selected_res]
 
         quality = st.selectbox(
             "Quality",
             ["High Quality", "Medium (Balanced)", "Low (Smaller file)"]
         )
 
+        if "TikTok" in selected_res:
+            st.info("📱 Vertical video (9:16) for TikTok/Reels/Shorts")
+
         st.markdown("---")
 
         st.markdown("### ✅ Checklist")
 
         project = st.session_state.project
-        checks = {
-            "Title": bool(project.get('title') or project.get('title_urdu')),
-            "Arabic Text": bool(project.get('arabic_text')),
-            "Arabic Verified": project.get('arabic_verified', False),
-            "Script": bool(project.get('script_urdu')),
-            "Audio": bool(project.get('audio_path') and os.path.exists(project.get('audio_path', ''))),
-            "Captions": len(project.get('captions', [])) > 0,
-        }
+        is_islamic_export = project.get('content_category', 'halal') == 'halal'
+
+        # Different checklist for Islamic vs other categories
+        if is_islamic_export:
+            checks = {
+                "Title": bool(project.get('title') or project.get('title_urdu')),
+                "Arabic Text": bool(project.get('arabic_text')),
+                "Arabic Verified": project.get('arabic_verified', False),
+                "Script": bool(project.get('script_urdu')),
+                "Captions": len(project.get('captions', [])) > 0,
+            }
+        else:
+            # Non-Islamic - no Arabic requirements
+            checks = {
+                "Title": bool(project.get('title') or project.get('title_urdu')),
+                "Script": bool(project.get('script_urdu')),
+                "Captions": len(project.get('captions', [])) > 0,
+            }
 
         for item, status in checks.items():
             if status:
@@ -1185,6 +1523,14 @@ with tab5:
                 # Get project data
                 proj = st.session_state.project
 
+                # Check if user uploaded custom audio
+                uploaded_audio_path = proj.get('audio_path')
+                use_uploaded_audio = False
+                if uploaded_audio_path and os.path.exists(uploaded_audio_path):
+                    # Check if it's an uploaded audio (not generated voice preview)
+                    if 'uploaded_' in os.path.basename(uploaded_audio_path):
+                        use_uploaded_audio = True
+
                 # Generate the video
                 video_path, audio_path = generate_video(
                     script_urdu=proj.get('script_urdu', ''),
@@ -1193,11 +1539,21 @@ with tab5:
                     captions=proj.get('captions', []),
                     voice=proj.get('voice', 'ur-PK-AsadNeural'),
                     arabic_voice=proj.get('arabic_voice', 'ar-SA-HamedNeural'),
-                    voice_speed=proj.get('voice_speed', '-10%'),
-                    urdu_pitch=proj.get('urdu_pitch', '-15Hz'),
+                    voice_speed=proj.get('voice_speed', '-15%'),
+                    urdu_pitch=proj.get('urdu_pitch', '-10Hz'),
                     arabic_pitch=proj.get('arabic_pitch', '-5Hz'),
                     include_arabic_recitation=proj.get('include_arabic_recitation', True),
                     output_name=output_name,
+                    text_effect=proj.get('text_effect', 'fade'),
+                    tts_provider=proj.get('tts_provider', 'edge'),
+                    resolution=proj.get('resolution', '1080p'),
+                    custom_audio_path=uploaded_audio_path if use_uploaded_audio else None,
+                    bg_mode=proj.get('bg_mode', 'scenery'),  # Category scenery by default
+                    content_category=proj.get('content_category', 'halal'),  # Content category
+                    background_audio=proj.get('background_audio', None),  # Background ASMR sound
+                    background_volume=proj.get('background_volume', 0.3),  # Background volume
+                    auto_generate_images=proj.get('auto_generate_images', False),  # AI images
+                    image_style=proj.get('image_style', 'cinematic'),  # Image style
                     progress_callback=update_progress
                 )
 
